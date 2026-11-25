@@ -1,0 +1,36 @@
+{
+  "name": "endfield-menu",
+  "version": "1.0.0",
+  "description": "Оверлей-меню поверх Arknights: Endfield с настраиваемыми горячими клавишами",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "local.endfield.menu",
+    "productName": "Endfield Menu",
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "EndfieldMenu-${version}.exe"
+    }
+  }
+}

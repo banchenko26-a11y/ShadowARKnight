@@ -1,0 +1,42 @@
+# Собирает EndfieldMenu.exe на серверах GitHub — Node.js у себя ставить не нужно.
+# Запускается сам при каждой загрузке в main, или вручную: Actions → "Build EXE" → Run workflow.
+# Если опубликовать релиз (тег вида v1.0.0) — exe сам прикрепится к нему в Releases.
+name: Build EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Установка зависимостей
+        run: npm install
+
+      - name: Сборка portable .exe
+        run: npm run build
+
+      - name: Скачать exe (вкладка Actions → этот запуск → Artifacts)
+        uses: actions/upload-artifact@v4
+        with:
+          name: EndfieldMenu
+          path: dist/*.exe
+
+      - name: Прикрепить exe к релизу
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.exe

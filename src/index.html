@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>Endfield Menu</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <div id="bg"></div>
+    <div id="shade"></div>
+
+    <!-- Шапка: за неё окно перетаскивается -->
+    <header id="titlebar">
+      <div class="brand"><span class="mark"></span>ENDFIELD MENU</div>
+      <div id="status">
+        <span id="cpu">ЦП —</span>
+        <span id="ram">ОЗУ —</span>
+        <span id="click-badge" class="badge hidden">КЛИКИ СКВОЗЬ</span>
+      </div>
+      <div class="win-btns">
+        <button id="btn-compact" title="Компактный режим">▭</button>
+        <button id="btn-hide" title="Скрыть (вернуть — горячей клавишей)">—</button>
+        <button id="btn-quit" title="Закрыть" class="danger">✕</button>
+      </div>
+    </header>
+
+    <div id="body">
+      <nav id="tabs">
+        <button data-tab="home" class="active">Главная</button>
+        <button data-tab="hotkeys">Горячие клавиши</button>
+        <button data-tab="timer">Таймер</button>
+        <button data-tab="notes">Заметки</button>
+        <button data-tab="settings">Настройки</button>
+      </nav>
+
+      <main>
+        <!-- Главная -->
+        <section id="tab-home" class="panel active">
+          <h2>Быстрые действия</h2>
+          <div class="grid" id="quick"></div>
+          <p class="hint">Меню работает поверх игры в <b>оконном</b> или <b>безрамочном</b> режиме.
+            В эксклюзивном полноэкранном режиме Windows его не покажет.</p>
+        </section>
+
+        <!-- Горячие клавиши -->
+        <section id="tab-hotkeys" class="panel">
+          <div class="row-between">
+            <h2>Горячие клавиши</h2>
+            <button id="reset-hotkeys" class="ghost">Сбросить всё</button>
+          </div>
+          <p class="hint">Нажмите «Изменить», затем нужную комбинацию. Esc — отмена, Backspace — убрать клавишу.</p>
+          <div id="hotkey-list"></div>
+        </section>
+
+        <!-- Таймер -->
+        <section id="tab-timer" class="panel">
+          <h2>Таймер</h2>
+          <div id="timer-display">10:00</div>
+          <div class="row">
+            <label>Минут: <input id="timer-min" type="number" min="1" max="600" value="10"></label>
+            <button id="timer-toggle">Старт</button>
+            <button id="timer-reset" class="ghost">Сброс</button>
+          </div>
+          <p class="hint">Когда время выйдет, придёт уведомление Windows.</p>
+        </section>
+
+        <!-- Заметки -->
+        <section id="tab-notes" class="panel">
+          <h2>Заметки</h2>
+          <textarea id="notes" placeholder="Билды, команды, маршруты фарма…"></textarea>
+          <p class="hint">Сохраняются автоматически.</p>
+        </section>
+
+        <!-- Настройки -->
+        <section id="tab-settings" class="panel">
+          <h2>Настройки</h2>
+          <div class="field">
+            <span>Прозрачность меню</span>
+            <input id="opacity" type="range" min="0.2" max="1" step="0.05">
+            <span id="opacity-val"></span>
+          </div>
+          <div class="field">
+            <span>Фон меню</span>
+            <button id="bg-choose">Выбрать картинку…</button>
+            <button id="bg-reset" class="ghost">Вернуть стандартный</button>
+          </div>
+          <h3>Ссылки (карта, вики, гайды)</h3>
+          <div id="links"></div>
+          <p class="hint" id="config-path"></p>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="hidden"></div>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>
