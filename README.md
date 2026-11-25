@@ -33,6 +33,6 @@
 2. Откройте вкладку **Actions** → **Build EXE** → **Run workflow**.
 3. Через 3–5 минут откройте этот запуск. Внизу, в разделе **Artifacts**, будет `EndfieldMenu`: это zip с готовым exe.
 
-Чтобы exe сразу появился в **Releases** для друзей, создайте релиз с тегом `v1.0.0`: **Releases → Draft a new release → тег v1.0.0 → Publish**. Сборка запустится сама и прикрепит exe к релизу.
+Чтобы выпустить версию для друзей, создайте тег вида `v1.0.1` (**Releases → Draft a new release → новый тег → Publish** или `git tag v1.0.1 && git push --tags`). Сборка сама создаст релиз и прикрепит к нему exe.
 
 Если Node.js у вас всё-таки есть, можно собрать локально: `npm install`, затем `npm run build`. Exe появится в папке `dist`.

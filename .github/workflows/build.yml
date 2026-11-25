@@ -1,14 +1,13 @@
 # Собирает EndfieldMenu.exe на серверах GitHub — Node.js у себя ставить не нужно.
 # Запускается сам при каждой загрузке в main, или вручную: Actions → "Build EXE" → Run workflow.
-# Если опубликовать релиз (тег вида v1.0.0) — exe сам прикрепится к нему в Releases.
+# Тег вида v1.0.0 → сборка сама создаст релиз в Releases и прикрепит к нему exe.
 name: Build EXE
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
-  release:
-    types: [published]
+    tags: ['v*']
 
 permissions:
   contents: write
@@ -35,8 +34,13 @@ jobs:
           name: EndfieldMenu
           path: dist/*.exe
 
-      - name: Прикрепить exe к релизу
-        if: github.event_name == 'release'
+      - name: Создать релиз и прикрепить exe
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          name: Endfield Menu ${{ github.ref_name }}
+          body: |
+            Скачайте **EndfieldMenu-*.exe** ниже и запустите — установка и Node.js не нужны.
+            Если Windows покажет синее окно: «Подробнее» → «Выполнить в любом случае».
+            В игре включите оконный или безрамочный режим.
           files: dist/*.exe
