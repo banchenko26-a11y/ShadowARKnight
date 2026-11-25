@@ -87,7 +87,24 @@
             <button id="bg-choose">Выбрать картинку…</button>
             <button id="bg-reset" class="ghost">Вернуть стандартный</button>
           </div>
-          <h3>Ссылки (карта, вики, гайды)</h3>
+          <h3>Интерактивная карта</h3>
+          <div class="field">
+            <span>Ссылка на карту</span>
+            <input id="map-url" type="url" placeholder="https://…" style="flex:1">
+            <button id="map-default" class="ghost">По умолчанию</button>
+          </div>
+          <h3>Запуск вместе с игрой</h3>
+          <div class="field">
+            <span>Процесс игры</span>
+            <input id="game-proc" placeholder="пусто = найти сам (Endfield…)" style="flex:1">
+          </div>
+          <div class="field">
+            <span>Консоль</span>
+            <label><input id="hide-console" type="checkbox"> прятать, когда игра найдена</label>
+          </div>
+          <p class="hint">Если меню не появляется при запуске игры: откройте Диспетчер задач → «Подробности»,
+            найдите там процесс игры и впишите его имя сюда (например, <b>Endfield.exe</b>). Изменение сработает при следующем запуске.</p>
+          <h3>Ссылки (вики, гайды)</h3>
           <div id="links"></div>
           <p class="hint" id="config-path"></p>
         </section>

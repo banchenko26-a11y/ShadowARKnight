@@ -229,6 +229,31 @@ function renderLinks() {
   });
 }
 
+// ---------- Карта и запуск с игрой ----------
+function setupStartup() {
+  const url = $('#map-url'), proc = $('#game-proc'), hide = $('#hide-console');
+  url.value = state.config.mapUrl || state.defaultMapUrl;
+  proc.value = state.config.gameProcess || '';
+  hide.checked = state.config.hideConsole !== false;
+
+  url.addEventListener('change', () => {
+    const v = url.value.trim();
+    if (!/^https?:\/\//i.test(v)) { toast('Ссылка должна начинаться с https://'); return; }
+    api.patchConfig({ mapUrl: v });
+    toast('Карта обновлена');
+  });
+  $('#map-default').addEventListener('click', () => {
+    url.value = state.defaultMapUrl;
+    api.patchConfig({ mapUrl: state.defaultMapUrl });
+    toast('Вернул стандартную карту');
+  });
+  proc.addEventListener('change', () => {
+    api.patchConfig({ gameProcess: proc.value.trim() });
+    toast('Сохранено — сработает при следующем запуске');
+  });
+  hide.addEventListener('change', () => api.patchConfig({ hideConsole: hide.checked }));
+}
+
 // ---------- Окно ----------
 function setCompact(on) {
   state.config.compact = on;
@@ -267,5 +292,6 @@ api.on('stats', (s) => {
   $('#config-path').textContent = 'Настройки хранятся в: ' + state.configPath;
   timerReset();
   renderLinks();
+  setupStartup();
   renderHotkeys();
 })();

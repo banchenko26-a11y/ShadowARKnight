@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>Карта</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #111311; color: #f2f3ee; overflow: hidden; }
+    body { font: 13px "Segoe UI", system-ui, sans-serif; user-select: none; }
+    #bar {
+      -webkit-app-region: drag; height: 36px; display: flex; align-items: center; gap: 6px;
+      padding: 0 6px 0 12px; background: #0b0c0a; border-bottom: 2px solid #e6f23a;
+    }
+    .mark { width: 9px; height: 9px; background: #e6f23a; transform: skewX(-18deg); flex: none; }
+    #title { font-weight: 700; letter-spacing: .12em; font-size: 12px; flex: none; }
+    #page { color: #8d917f; font-size: 12px; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    button {
+      -webkit-app-region: no-drag; font: inherit; color: #f2f3ee; background: transparent;
+      border: none; min-width: 28px; height: 26px; padding: 0 6px; border-radius: 3px; cursor: pointer;
+    }
+    button:hover { background: rgba(255,255,255,.1); }
+    button:disabled { opacity: .35; cursor: default; background: transparent; }
+    #close:hover { background: #ff5a4f; }
+    #err { padding: 20px; color: #ff8a80; line-height: 1.5; }
+    .spin { display: inline-block; animation: s 1s linear infinite; }
+    @keyframes s { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="bar">
+    <span class="mark"></span><span id="title">КАРТА</span>
+    <span id="page">загрузка…</span>
+    <button id="back" title="Назад" disabled>←</button>
+    <button id="reload" title="Обновить">⟳</button>
+    <button id="home" title="На главную страницу карты">⌂</button>
+    <button id="browser" title="Открыть в браузере">↗</button>
+    <button id="close" title="Скрыть карту (вернуть — горячей клавишей)">✕</button>
+  </div>
+  <div id="err" hidden></div>
+  <script src="map.js"></script>
+</body>
+</html>
