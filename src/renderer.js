@@ -177,7 +177,7 @@ function timerToggle() {
     timerLeft--;
     if (timerLeft <= 0) {
       timerLeft = 0; clearInterval(timerId); timerRunning = false;
-      api.notify('Endfield Menu', 'Таймер завершён!');
+      api.notify('ShadowARK', 'Таймер завершён!');
       toast('⏰ Таймер завершён');
     }
     timerDraw();

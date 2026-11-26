@@ -1,4 +1,4 @@
-// Endfield Menu — главный процесс Electron.
+// ShadowARK — главный процесс Electron.
 // Отдельные окна поверх игры. В память игры и её файлы НЕ лезет:
 // игру только «видит» по списку процессов Windows (как Диспетчер задач).
 const {
@@ -47,6 +47,8 @@ const EXAMPLE_ROTATION = {
 const DEFAULT_MAP_URL = 'https://game8.co/games/Arknights-Endfield/archives/533176';
 
 // ---------- Конфиг ----------
+// Папку настроек оставляем прежней, чтобы после переименования ничего не потерялось
+app.setPath('userData', path.join(app.getPath('appData'), 'endfield-menu'));
 const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
 const DEFAULT_CONFIG = {
   hotkeys: Object.fromEntries(Object.entries(ACTIONS).map(([k, v]) => [k, v.def])),
@@ -94,6 +96,7 @@ function saveConfig() {
 }
 
 const PRELOAD = path.join(__dirname, 'preload.js');
+const ICON = path.join(__dirname, 'assets', 'icon.png');
 const SECURE = { preload: PRELOAD, contextIsolation: true, nodeIntegration: false, sandbox: true };
 
 // ---------- Консоль-загрузчик ----------
@@ -109,7 +112,8 @@ function log(text, kind = 'info') {
 function createConsole() {
   consoleWin = new BrowserWindow({
     width: 680, height: 400, minWidth: 420, minHeight: 240,
-    title: 'Endfield Menu — консоль',
+    title: 'ShadowARK — консоль',
+    icon: ICON,
     backgroundColor: '#0c0c0c',
     autoHideMenuBar: true,
     webPreferences: SECURE
@@ -419,7 +423,7 @@ async function takeScreenshot() {
     };
     const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: size });
     if (!sources.length) throw new Error('экран не найден');
-    const dir = path.join(app.getPath('pictures'), 'EndfieldMenu');
+    const dir = path.join(app.getPath('pictures'), 'ShadowARK');
     fs.mkdirSync(dir, { recursive: true });
     const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const file = path.join(dir, `endfield_${stamp}.png`);
@@ -500,7 +504,8 @@ function isGame(p) {
   if (want) return n === want || n === want + '.exe';
   // Авто: имя содержит «endfield», но это не мы сами и не лаунчер
   return n.includes('endfield') && !n.includes('menu') && !n.includes('launcher')
-    && !n.includes('gryphlink') && !n.includes('crash') && !n.includes('electron');
+    && !n.includes('gryphlink') && !n.includes('crash') && !n.includes('electron')
+    && !n.includes('shadowark');
 }
 
 function startSearch() {
@@ -602,7 +607,7 @@ ipcMain.handle('bg:choose', async () => {
 ipcMain.handle('bg:reset', () => { config.bgPath = null; saveConfig(); return bgUrl(); });
 
 ipcMain.on('notify', (_e, { title, body }) => {
-  if (Notification.isSupported()) new Notification({ title, body }).show();
+  if (Notification.isSupported()) new Notification({ title, body, icon: ICON }).show();
 });
 ipcMain.on('window:hide', () => win.hide());
 ipcMain.on('window:quit', () => app.quit());
@@ -635,11 +640,11 @@ ipcMain.on('rot:control', (_e, action) => rotAction(action));
 ipcMain.on('rot:hudLock', (_e, locked) => setHudLocked(!!locked));
 ipcMain.handle('rot:export', async () => {
   const r = await dialog.showSaveDialog(win, {
-    title: 'Сохранить ротации', defaultPath: 'endfield-rotations.json',
+    title: 'Сохранить ротации', defaultPath: 'shadowark-rotations.json',
     filters: [{ name: 'Ротации', extensions: ['json'] }]
   });
   if (r.canceled || !r.filePath) return null;
-  fs.writeFileSync(r.filePath, JSON.stringify({ app: 'EndfieldMenu', version: 1, rotations: config.rotations }, null, 2));
+  fs.writeFileSync(r.filePath, JSON.stringify({ app: 'ShadowARK', version: 1, rotations: config.rotations }, null, 2));
   return r.filePath;
 });
 ipcMain.handle('rot:import', async () => {
@@ -690,7 +695,7 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(() => {
     createMenu();
     createConsole();
-    log(`Endfield Menu v${app.getVersion()}`, 'title');
+    log(`ShadowARK v${app.getVersion()} · оверлей для Arknights: Endfield`, 'title');
     log('В игру не внедряется: только окна поверх неё.', 'hint');
     win.webContents.once('did-finish-load', () => {
       const failed = registerHotkeys();

@@ -1,4 +1,4 @@
-# Собирает EndfieldMenu.exe на серверах GitHub — Node.js у себя ставить не нужно.
+# Собирает ShadowARK.exe на серверах GitHub — Node.js у себя ставить не нужно.
 # Запускается сам при каждой загрузке в main, или вручную: Actions → "Build EXE" → Run workflow.
 # Тег вида v1.0.0 → сборка сама создаст релиз в Releases и прикрепит к нему exe.
 name: Build EXE
@@ -38,20 +38,20 @@ jobs:
       - name: Скачать exe (вкладка Actions → этот запуск → Artifacts)
         uses: actions/upload-artifact@v4
         with:
-          name: EndfieldMenu
+          name: ShadowARK
           path: dist/*.exe
 
       - name: Создать релиз и прикрепить exe
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          name: Endfield Menu ${{ github.ref_name }}
+          name: ShadowARK ${{ github.ref_name }}
           body: |
-            **Компаньон-оверлей для Arknights: Endfield на ПК:** карта, тренер ротаций, таймеры и заметки поверх игры.
+            **ShadowARK — компаньон-оверлей для Arknights: Endfield на ПК:** карта, тренер ротаций, таймеры и заметки поверх игры.
             Не чит: в память и файлы игры не лезет и кнопки за вас не нажимает.
 
             **Как запустить**
-            1. Скачайте **EndfieldMenu-*.exe** ниже. Установка и Node.js не нужны.
+            1. Скачайте **ShadowARK-*.exe** ниже. Установка и Node.js не нужны.
             2. Если Windows покажет синее окно, нажмите «Подробнее» → «Выполнить в любом случае».
             3. Запустите игру: меню появится поверх неё само, а после выхода из игры закроется.
             4. В игре включите оконный или безрамочный режим.

@@ -44,6 +44,7 @@ header, #body, #toast { position: relative; z-index: 1; }
 }
 .brand { font-weight: 800; letter-spacing: .18em; font-size: 13px; display: flex; align-items: center; gap: 8px; }
 .mark { width: 10px; height: 10px; background: var(--accent); transform: skewX(-18deg); }
+.logo { width: 20px; height: 20px; border-radius: 5px; }
 #status { display: flex; gap: 12px; color: var(--muted); font-size: 12px; margin-left: auto; }
 .badge { background: var(--accent); color: #111; padding: 1px 6px; font-weight: 700; border-radius: 3px; }
 .win-btns { display: flex; gap: 4px; -webkit-app-region: no-drag; }
