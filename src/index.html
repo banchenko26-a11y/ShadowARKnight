@@ -31,6 +31,7 @@
       <nav id="tabs">
         <button data-tab="home" class="active">Главная</button>
         <button data-tab="hotkeys">Горячие клавиши</button>
+        <button data-tab="rotation">Ротации</button>
         <button data-tab="timer">Таймер</button>
         <button data-tab="notes">Заметки</button>
         <button data-tab="settings">Настройки</button>
@@ -53,6 +54,39 @@
           </div>
           <p class="hint">Нажмите «Изменить», затем нужную комбинацию. Esc — отмена, Backspace — убрать клавишу.</p>
           <div id="hotkey-list"></div>
+        </section>
+
+        <!-- Ротации -->
+        <section id="tab-rotation" class="panel">
+          <div class="row-between">
+            <h2>Тренер ротаций</h2>
+            <button id="rot-run">▶ Старт</button>
+          </div>
+          <div class="row" style="margin-bottom:10px">
+            <select id="rot-select"></select>
+            <button id="rot-add" class="ghost" title="Новая ротация">+ Новая</button>
+            <button id="rot-dup" class="ghost" title="Копия">Копия</button>
+            <button id="rot-del" class="ghost" title="Удалить">Удалить</button>
+          </div>
+          <div class="row" style="margin-bottom:10px">
+            <input id="rot-name" placeholder="Название (например, команда для боссов)" style="flex:1">
+            <label><input id="rot-loop" type="checkbox"> по кругу</label>
+          </div>
+          <div class="steps-head"><span>#</span><span>Кнопка</span><span>Что делать</span><span title="Сколько секунд до следующего шага. 0 — ждать вашу клавишу «следующий шаг»">Пауза, с</span><span>Подсказка</span><span></span></div>
+          <div id="rot-steps"></div>
+          <button id="rot-step-add" class="ghost" style="margin-top:6px">+ Шаг</button>
+          <p class="hint">Пауза — через сколько секунд подсказка перейдёт к следующему шагу.
+            <b>0</b> — ждать вашу клавишу «следующий шаг»; удобно для комбо и ульты, которые зависят от боя.</p>
+          <h3>Подсказка поверх игры</h3>
+          <div class="row">
+            <button id="rot-move" class="ghost">Переместить подсказку</button>
+            <label><input id="rot-sound" type="checkbox"> звук при смене шага</label>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button id="rot-import" class="ghost">Загрузить из файла…</button>
+            <button id="rot-export" class="ghost">Сохранить в файл…</button>
+          </div>
+          <p class="hint" id="rot-keys"></p>
         </section>
 
         <!-- Таймер -->

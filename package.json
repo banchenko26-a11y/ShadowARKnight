@@ -1,6 +1,6 @@
 {
   "name": "endfield-menu",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Оверлей-меню поверх Arknights: Endfield с настраиваемыми горячими клавишами",
   "main": "main.js",
   "scripts": {

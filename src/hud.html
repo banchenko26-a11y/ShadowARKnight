@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>Ротация</title>
+  <style>
+    :root { --accent: #e6f23a; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: transparent; overflow: hidden; }
+    body { font-family: "Segoe UI", "Bahnschrift", system-ui, sans-serif; color: #f2f3ee; user-select: none; }
+    #box {
+      height: 100%; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px 12px;
+      background: rgba(8, 9, 7, .72); border-radius: 10px; border: 1px solid rgba(255,255,255,.1);
+      border-top: 3px solid var(--accent);
+    }
+    body.unlocked #box { -webkit-app-region: drag; border: 2px dashed var(--accent); cursor: move; }
+    #top { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #a9ad9c; }
+    #name { font-weight: 700; letter-spacing: .06em; color: #f2f3ee; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    #counter { margin-left: auto; font-family: Consolas, monospace; }
+    #main { flex: 1; display: flex; align-items: center; gap: 14px; min-height: 0; }
+    .cap {
+      flex: none; min-width: 64px; height: 64px; padding: 0 12px; display: grid; place-items: center;
+      font: 800 30px/1 "Bahnschrift", Consolas, sans-serif; color: #111; background: var(--accent);
+      border-radius: 8px; box-shadow: 0 3px 0 #9aa31f;
+    }
+    .cap.pop { animation: pop .25s ease-out; }
+    @keyframes pop { from { transform: scale(1.25); } to { transform: scale(1); } }
+    #cur { flex: 1; min-width: 0; }
+    #label { font-size: 20px; font-weight: 700; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    #note { font-size: 13px; color: var(--accent); margin-top: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    #next { flex: none; max-width: 38%; text-align: right; font-size: 12px; color: #a9ad9c; }
+    #next .cap-s {
+      display: inline-block; min-width: 26px; padding: 2px 6px; margin: 4px 0 2px; text-align: center;
+      font: 700 15px Consolas, monospace; color: var(--accent); border: 1px solid rgba(230,242,58,.5); border-radius: 4px;
+    }
+    #next .lbl { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #d6d9cc; }
+    #bar { height: 6px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; }
+    #fill { height: 100%; width: 0; background: var(--accent); }
+    #fill.soon { background: #ff7a3d; }
+    #hint { font-size: 12px; color: #a9ad9c; text-align: center; }
+    #hint kbd { font-family: Consolas, monospace; color: var(--accent); }
+    .center { flex: 1; display: grid; place-items: center; font-size: 18px; font-weight: 700; text-align: center; white-space: pre-line; }
+  </style>
+</head>
+<body>
+  <div id="box">
+    <div id="top"><span id="name">—</span><span id="counter"></span></div>
+    <div id="main"></div>
+    <div id="bar"><div id="fill"></div></div>
+    <div id="hint"></div>
+  </div>
+  <script src="hud.js"></script>
+</body>
+</html>

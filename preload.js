@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 const CHANNELS = [
   'action', 'stats', 'toast', 'opacity', 'clickthrough', 'hotkeys:status',
-  'console:line', 'map:state', 'map:error'
+  'console:line', 'map:state', 'map:error', 'rot:state'
 ];
 
 contextBridge.exposeInMainWorld('menu', {
@@ -26,6 +26,12 @@ contextBridge.exposeInMainWorld('menu', {
   consoleQuit: () => ipcRenderer.send('console:quit'),
   // карта
   mapCmd: (cmd) => ipcRenderer.send('map:cmd', cmd),
+  // ротации
+  rotSave: (data) => ipcRenderer.send('rot:save', data),
+  rotControl: (action) => ipcRenderer.send('rot:control', action),
+  rotHudLock: (locked) => ipcRenderer.send('rot:hudLock', locked),
+  rotExport: () => ipcRenderer.invoke('rot:export'),
+  rotImport: () => ipcRenderer.invoke('rot:import'),
 
   on: (channel, cb) => {
     if (CHANNELS.includes(channel)) ipcRenderer.on(channel, (_e, data) => cb(data));

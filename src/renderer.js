@@ -86,6 +86,7 @@ function renderHotkeys() {
     list.append(row);
   }
   renderQuick();
+  if ($('#rot-keys')) renderRotKeys();
 }
 
 function startListening(action) {
@@ -254,6 +255,161 @@ function setupStartup() {
   hide.addEventListener('change', () => api.patchConfig({ hideConsole: hide.checked }));
 }
 
+// ---------- Ротации ----------
+let rotations = [];
+let rotActive = 0;
+let rotLive = null;   // последнее состояние движка
+let hudLocked = true;
+let rotSaveTimer = null;
+
+function rotSave(immediate) {
+  clearTimeout(rotSaveTimer);
+  const go = () => api.rotSave({ rotations, activeRotation: rotActive });
+  if (immediate) go(); else rotSaveTimer = setTimeout(go, 300);
+}
+const curRot = () => rotations[rotActive];
+
+function renderRotSelect() {
+  const sel = $('#rot-select');
+  sel.innerHTML = '';
+  rotations.forEach((r, i) => sel.append(Object.assign(document.createElement('option'), { value: i, textContent: r.name || `Ротация ${i + 1}` })));
+  sel.value = rotActive;
+  const R = curRot();
+  $('#rot-name').value = R ? R.name : '';
+  $('#rot-loop').checked = !!(R && R.loop);
+  ['#rot-name', '#rot-loop', '#rot-dup', '#rot-del', '#rot-step-add', '#rot-run'].forEach(s => $(s).disabled = !R);
+}
+
+function renderSteps() {
+  const box = $('#rot-steps');
+  box.innerHTML = '';
+  const R = curRot();
+  if (!R) { box.textContent = 'Нет ротаций — нажмите «+ Новая».'; return; }
+  R.steps.forEach((st, i) => {
+    const row = document.createElement('div');
+    row.className = 'step' + (rotLive && rotLive.running && rotLive.index === rotActive && rotLive.s === i ? ' now' : '');
+    const n = Object.assign(document.createElement('span'), { className: 'n', textContent: i + 1 });
+    const mk = (field, attrs) => {
+      const inp = Object.assign(document.createElement('input'), { value: st[field] ?? '', ...attrs });
+      inp.addEventListener('input', () => {
+        st[field] = field === 'wait' ? Math.max(0, Number(inp.value) || 0) : inp.value;
+        rotSave();
+      });
+      return inp;
+    };
+    const key = mk('key', { className: 'key', placeholder: 'E', maxLength: 20 });
+    const label = mk('label', { placeholder: 'Навык / комбо / ульта', maxLength: 60 });
+    const wait = mk('wait', { type: 'number', min: 0, max: 120, step: 0.1 });
+    const note = mk('note', { placeholder: 'необязательно', maxLength: 120 });
+    const ops = Object.assign(document.createElement('div'), { className: 'ops' });
+    const op = (txt, title, fn) => {
+      const b = Object.assign(document.createElement('button'), { textContent: txt, title });
+      b.addEventListener('click', () => { fn(); rotSave(true); renderSteps(); });
+      ops.append(b);
+    };
+    op('↑', 'Выше', () => { if (i > 0) [R.steps[i - 1], R.steps[i]] = [R.steps[i], R.steps[i - 1]]; });
+    op('↓', 'Ниже', () => { if (i < R.steps.length - 1) [R.steps[i + 1], R.steps[i]] = [R.steps[i], R.steps[i + 1]]; });
+    op('✕', 'Удалить шаг', () => R.steps.splice(i, 1));
+    row.append(n, key, label, wait, note, ops);
+    box.append(row);
+  });
+}
+
+function renderRotKeys() {
+  const hk = state.config.hotkeys;
+  const k = (a) => hk[a] ? pretty(hk[a]) : 'не задана';
+  $('#rot-keys').textContent =
+    `Клавиши: старт/стоп — ${k('rotToggle')}, следующий шаг — ${k('rotNext')}, назад — ${k('rotPrev')}, сменить команду — ${k('rotSwitch')}. ` +
+    'Меняются во вкладке «Горячие клавиши». Не ставьте туда кнопки, которые нужны в игре: пока меню запущено, игра их не получит.';
+}
+
+function setupRotations() {
+  rotations = structuredClone(state.config.rotations || []);
+  rotActive = Math.min(state.config.activeRotation || 0, Math.max(0, rotations.length - 1));
+  $('#rot-sound').checked = state.config.rotSound !== false;
+
+  $('#rot-select').addEventListener('change', (e) => {
+    rotActive = Number(e.target.value);
+    rotSave(true); renderRotSelect(); renderSteps();
+  });
+  $('#rot-add').addEventListener('click', () => {
+    rotations.push({ name: `Ротация ${rotations.length + 1}`, loop: true, steps: [{ key: '', label: '', wait: 1, note: '' }] });
+    rotActive = rotations.length - 1;
+    rotSave(true); renderRotSelect(); renderSteps();
+    $('#rot-name').focus(); $('#rot-name').select();
+  });
+  $('#rot-dup').addEventListener('click', () => {
+    const copy = structuredClone(curRot());
+    copy.name = (copy.name || 'Ротация') + ' (копия)';
+    rotations.splice(rotActive + 1, 0, copy);
+    rotActive++;
+    rotSave(true); renderRotSelect(); renderSteps();
+  });
+  $('#rot-del').addEventListener('click', () => {
+    if (!curRot() || !confirmDelete()) return;
+    rotations.splice(rotActive, 1);
+    rotActive = Math.max(0, rotActive - 1);
+    rotSave(true); renderRotSelect(); renderSteps();
+  });
+  $('#rot-name').addEventListener('input', (e) => {
+    curRot().name = e.target.value;
+    const opt = $('#rot-select').options[rotActive];
+    if (opt) opt.textContent = e.target.value || `Ротация ${rotActive + 1}`;
+    rotSave();
+  });
+  $('#rot-loop').addEventListener('change', (e) => { curRot().loop = e.target.checked; rotSave(true); });
+  $('#rot-step-add').addEventListener('click', () => {
+    curRot().steps.push({ key: '', label: '', wait: 1, note: '' });
+    rotSave(true); renderSteps();
+    const keys = document.querySelectorAll('#rot-steps .key');
+    if (keys.length) keys[keys.length - 1].focus();
+  });
+  $('#rot-run').addEventListener('click', () => api.rotControl('rotToggle'));
+  $('#rot-move').addEventListener('click', () => api.rotHudLock(!hudLocked));
+  $('#rot-sound').addEventListener('change', (e) => api.rotSave({ rotSound: e.target.checked }));
+  $('#rot-export').addEventListener('click', async () => {
+    rotSave(true);
+    const f = await api.rotExport();
+    if (f) toast('Сохранено: ' + f);
+  });
+  $('#rot-import').addEventListener('click', async () => {
+    const r = await api.rotImport();
+    if (!r) return;
+    if (!r.ok) return toast(r.error);
+    rotations = r.rotations;
+    rotActive = rotations.length - r.added;
+    rotSave(true); renderRotSelect(); renderSteps();
+    toast(`Добавлено ротаций: ${r.added}`);
+  });
+
+  renderRotSelect();
+  renderSteps();
+  renderRotKeys();
+}
+
+// Удаление без системного окна подтверждения: второй клик в течение 3 секунд
+let delArmed = 0;
+function confirmDelete() {
+  if (Date.now() - delArmed < 3000) { delArmed = 0; $('#rot-del').textContent = 'Удалить'; return true; }
+  delArmed = Date.now();
+  $('#rot-del').textContent = 'Точно удалить?';
+  setTimeout(() => { if (delArmed) $('#rot-del').textContent = 'Удалить'; }, 3000);
+  return false;
+}
+
+api.on('rot:state', (s) => {
+  rotLive = s;
+  hudLocked = s.locked;
+  $('#rot-run').textContent = s.running ? '■ Стоп' : '▶ Старт';
+  $('#rot-move').textContent = s.locked ? 'Переместить подсказку' : '✓ Закрепить подсказку';
+  if (s.index !== rotActive && !document.activeElement.closest?.('#tab-rotation')) {
+    rotActive = s.index; renderRotSelect(); renderSteps();
+  }
+  // Подсвечиваем текущий шаг, не пересоздавая поля (чтобы не сбивать ввод)
+  document.querySelectorAll('#rot-steps .step').forEach((row, i) =>
+    row.classList.toggle('now', !!(s.running && s.index === rotActive && s.s === i)));
+});
+
 // ---------- Окно ----------
 function setCompact(on) {
   state.config.compact = on;
@@ -293,5 +449,6 @@ api.on('stats', (s) => {
   timerReset();
   renderLinks();
   setupStartup();
+  setupRotations();
   renderHotkeys();
 })();

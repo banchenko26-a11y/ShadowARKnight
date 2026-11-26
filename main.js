@@ -24,7 +24,24 @@ const ACTIONS = {
   openLink2:       { label: 'Открыть ссылку №2',               def: 'Ctrl+2' },
   opacityUp:       { label: 'Прозрачность окон −',             def: 'Ctrl+Up' },
   opacityDown:     { label: 'Прозрачность окон +',             def: 'Ctrl+Down' },
-  compactMode:     { label: 'Компактный режим',                def: 'Ctrl+F8' }
+  compactMode:     { label: 'Компактный режим',                def: 'Ctrl+F8' },
+  rotToggle:       { label: 'Ротация: старт / стоп',           def: 'F5' },
+  rotNext:         { label: 'Ротация: следующий шаг',          def: 'F4' },
+  rotPrev:         { label: 'Ротация: шаг назад',              def: 'Shift+F4' },
+  rotSwitch:       { label: 'Ротация: сменить команду',        def: 'Ctrl+F5' }
+};
+
+// Пример-заготовка. Это НЕ готовая ротация из игры — замените своими шагами из гайда.
+const EXAMPLE_ROTATION = {
+  name: 'Пример (замените своей)',
+  loop: true,
+  steps: [
+    { key: '1',   label: 'Навык персонажа 1', wait: 1.5, note: '' },
+    { key: '2',   label: 'Навык персонажа 2', wait: 1.5, note: '' },
+    { key: 'E',   label: 'Комбо-навык',        wait: 0,   note: 'когда загорится иконка' },
+    { key: 'ЛКМ', label: 'Обычные атаки',      wait: 3,   note: '' },
+    { key: 'Q',   label: 'Ульта',              wait: 0,   note: 'при полной энергии' }
+  ]
 };
 
 const DEFAULT_MAP_URL = 'https://game8.co/games/Arknights-Endfield/archives/533176';
@@ -46,7 +63,11 @@ const DEFAULT_CONFIG = {
   hideConsole: true,               // прятать консоль, когда игра найдена
   bounds: null,
   mapBounds: null,
-  compact: false
+  compact: false,
+  rotations: [EXAMPLE_ROTATION],
+  activeRotation: 0,
+  rotSound: true,
+  hudBounds: null
 };
 
 function loadConfig() {
@@ -203,6 +224,124 @@ function toggleMap() {
   else mapWin.show(); // с фокусом — чтобы сразу можно было листать карту
 }
 
+// ---------- Тренер ротаций ----------
+// Подсказка (HUD) — маленькое прозрачное окно поверх игры, клики проходят сквозь него.
+// Шаги идут по таймингу (wait > 0) или ждут вашу клавишу «следующий шаг» (wait = 0).
+let hud = null;
+let hudLocked = true;
+const rot = { running: false, s: 0, start: 0, dur: 0, finished: false };
+let rotTimer = null;
+let hudHideTimer = null;
+
+function createHud() {
+  const wa = screen.getPrimaryDisplay().workArea;
+  const w = 460, h = 170;
+  const b = config.hudBounds || { width: w, height: h, x: wa.x + Math.round((wa.width - w) / 2), y: wa.y + 24 };
+  hud = new BrowserWindow({
+    ...b,
+    show: false,
+    frame: false, transparent: true, resizable: true,
+    alwaysOnTop: true, skipTaskbar: true, hasShadow: false,
+    focusable: false,
+    minWidth: 260, minHeight: 110,
+    backgroundColor: '#00000000',
+    webPreferences: SECURE
+  });
+  hud.setAlwaysOnTop(true, 'screen-saver');
+  hud.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  hud.setIgnoreMouseEvents(true, { forward: true });
+  hud.loadFile(path.join(__dirname, 'src', 'hud.html'));
+  hud.webContents.on('did-finish-load', rotBroadcast);
+  const remember = () => { if (!hud.isDestroyed()) { config.hudBounds = hud.getBounds(); saveConfig(); } };
+  hud.on('moved', remember);
+  hud.on('resized', remember);
+}
+function ensureHud() { if (!hud || hud.isDestroyed()) createHud(); return hud; }
+function showHud() {
+  ensureHud();
+  clearTimeout(hudHideTimer);
+  if (!hud.isVisible()) hud.showInactive();
+}
+function hideHudLater(ms) {
+  clearTimeout(hudHideTimer);
+  hudHideTimer = setTimeout(() => { if (hud && !hud.isDestroyed() && !rot.running && hudLocked) hud.hide(); }, ms);
+}
+
+function currentRotation() {
+  const list = config.rotations || [];
+  if (!list.length) return null;
+  if (config.activeRotation >= list.length || config.activeRotation < 0) config.activeRotation = 0;
+  return list[config.activeRotation];
+}
+
+function rotBroadcast() {
+  const R = currentRotation();
+  const payload = {
+    running: rot.running, finished: rot.finished,
+    name: R ? R.name : '', loop: !!(R && R.loop),
+    steps: R ? R.steps : [], s: rot.s, start: rot.start, dur: rot.dur, now: Date.now(),
+    sound: config.rotSound !== false, locked: hudLocked,
+    nextKey: config.hotkeys.rotNext || '', toggleKey: config.hotkeys.rotToggle || '',
+    index: config.activeRotation, count: (config.rotations || []).length
+  };
+  if (hud && !hud.isDestroyed()) hud.webContents.send('rot:state', payload);
+  send('rot:state', payload);
+}
+
+function rotGo(s) {
+  clearTimeout(rotTimer);
+  const R = currentRotation();
+  if (!R || !R.steps.length) { rotStop(); send('toast', 'В ротации нет шагов — добавьте их во вкладке «Ротации»'); return; }
+  if (s >= R.steps.length) {
+    if (R.loop) s = 0; else { rotStop(true); return; }
+  }
+  if (s < 0) s = 0;
+  rot.s = s;
+  rot.start = Date.now();
+  const wait = Math.max(0, Number(R.steps[s].wait) || 0);
+  rot.dur = wait * 1000;
+  if (wait > 0) rotTimer = setTimeout(() => rotGo(s + 1), rot.dur);
+  rotBroadcast();
+}
+
+function rotStart() {
+  rot.running = true;
+  rot.finished = false;
+  showHud();
+  rotGo(0);
+}
+
+function rotStop(finished = false) {
+  clearTimeout(rotTimer);
+  rot.running = false;
+  rot.finished = finished;
+  rotBroadcast();
+  hideHudLater(finished ? 2500 : 1200);
+}
+
+function rotAction(action) {
+  if (action === 'rotToggle') return rot.running ? rotStop() : rotStart();
+  if (action === 'rotNext')   return rot.running ? rotGo(rot.s + 1) : rotStart();
+  if (action === 'rotPrev')   return rot.running ? rotGo(rot.s - 1) : null;
+  if (action === 'rotSwitch') {
+    const n = (config.rotations || []).length;
+    if (!n) return;
+    config.activeRotation = (config.activeRotation + 1) % n;
+    saveConfig();
+    if (rot.running) rotGo(0);
+    else { rot.finished = false; showHud(); rotBroadcast(); hideHudLater(2000); }
+  }
+}
+
+function setHudLocked(locked) {
+  hudLocked = locked;
+  ensureHud();
+  hud.setIgnoreMouseEvents(locked, { forward: true });
+  hud.setFocusable(!locked);
+  if (!locked) showHud(); else if (!rot.running) hideHudLater(600);
+  rotBroadcast();
+}
+
 // ---------- Горячие клавиши ----------
 function runAction(action) {
   switch (action) {
@@ -219,6 +358,9 @@ function runAction(action) {
     case 'openNotes':
       if (!win.isVisible()) win.showInactive();
       send('action', action);
+      break;
+    case 'rotToggle': case 'rotNext': case 'rotPrev': case 'rotSwitch':
+      rotAction(action);
       break;
     default:
       send('action', action); // таймер, компактный режим — обрабатывает интерфейс
@@ -422,6 +564,7 @@ ipcMain.handle('hotkeys:set', (_e, action, accel) => {
   config.hotkeys[action] = accel || '';
   saveConfig();
   const failed = registerHotkeys();
+  rotBroadcast(); // в подсказке показаны клавиши — обновим их
   const bad = failed.find(f => f.action === action);
   return { ok: !bad, hotkeys: config.hotkeys,
     error: bad ? 'Эта комбинация занята другой программой или системой' : null };
@@ -463,6 +606,58 @@ ipcMain.on('notify', (_e, { title, body }) => {
 });
 ipcMain.on('window:hide', () => win.hide());
 ipcMain.on('window:quit', () => app.quit());
+
+// Ротации
+function cleanRotations(list) {
+  if (!Array.isArray(list)) throw new Error('ожидался список ротаций');
+  return list.slice(0, 100).map((r, i) => ({
+    name: String(r && r.name || `Ротация ${i + 1}`).slice(0, 60),
+    loop: !!(r && r.loop),
+    steps: (Array.isArray(r && r.steps) ? r.steps : []).slice(0, 200).map(st => ({
+      key: String(st && st.key || '').slice(0, 20),
+      label: String(st && st.label || '').slice(0, 60),
+      wait: Math.min(120, Math.max(0, Number(st && st.wait) || 0)),
+      note: String(st && st.note || '').slice(0, 120)
+    }))
+  }));
+}
+ipcMain.on('rot:save', (_e, { rotations, activeRotation, rotSound }) => {
+  try {
+    if (rotations) config.rotations = cleanRotations(rotations);
+    if (Number.isInteger(activeRotation)) config.activeRotation = activeRotation;
+    if (typeof rotSound === 'boolean') config.rotSound = rotSound;
+    currentRotation();
+    saveConfig();
+    rotBroadcast();
+  } catch (e) { send('toast', 'Не сохранилось: ' + e.message); }
+});
+ipcMain.on('rot:control', (_e, action) => rotAction(action));
+ipcMain.on('rot:hudLock', (_e, locked) => setHudLocked(!!locked));
+ipcMain.handle('rot:export', async () => {
+  const r = await dialog.showSaveDialog(win, {
+    title: 'Сохранить ротации', defaultPath: 'endfield-rotations.json',
+    filters: [{ name: 'Ротации', extensions: ['json'] }]
+  });
+  if (r.canceled || !r.filePath) return null;
+  fs.writeFileSync(r.filePath, JSON.stringify({ app: 'EndfieldMenu', version: 1, rotations: config.rotations }, null, 2));
+  return r.filePath;
+});
+ipcMain.handle('rot:import', async () => {
+  const r = await dialog.showOpenDialog(win, {
+    title: 'Загрузить ротации', filters: [{ name: 'Ротации', extensions: ['json'] }], properties: ['openFile']
+  });
+  if (r.canceled || !r.filePaths[0]) return null;
+  try {
+    const data = JSON.parse(fs.readFileSync(r.filePaths[0], 'utf8'));
+    const incoming = cleanRotations(Array.isArray(data) ? data : data.rotations);
+    config.rotations = [...(config.rotations || []), ...incoming];
+    saveConfig();
+    rotBroadcast();
+    return { ok: true, added: incoming.length, rotations: config.rotations };
+  } catch (e) {
+    return { ok: false, error: 'Файл не похож на ротации: ' + e.message };
+  }
+});
 
 // Консоль
 ipcMain.handle('console:history', () => consoleLog);
